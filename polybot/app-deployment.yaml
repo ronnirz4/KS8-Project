@@ -16,9 +16,11 @@ spec:
     spec:
       containers:
       - name: python-app
-        image: app-image-latest  # Replace with your actual Python app image
+        image: ronn4/app-image:last  # Replace with your actual Python app image
         ports:
         - containerPort: 8443  # Assuming your Python app runs on port 5000
         env:
         - name: ENV_VARIABLE_NAME
           value: "some-value"  # Replace with any environment variables needed
+      imagePullSecrets:
+      - name: regcred
