@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx-deployment
+  namespace: demoapp
   labels:
     app: nginx
 spec:
@@ -22,6 +23,8 @@ spec:
         volumeMounts:
         - name: static-content
           mountPath: /usr/share/nginx/html
+        - name: nginx-storage
+          mountPath: /usr/share/nginx/html/storage  # Mount PVC to this path
         resources:
           requests:
             memory: "64Mi"
@@ -47,3 +50,6 @@ spec:
       - name: static-content
         configMap:
           name: nginx-config  # Reference to a ConfigMap containing static content
+      - name: nginx-storage
+        persistentVolumeClaim:
+          claimName: nginx-pvc  # Reference to the PVC
