@@ -7,3 +7,4 @@ rules:
 - apiGroups: [""]
   resources: ["pods", "pods/exec", "pods/log", "services", "endpoints"]
   verbs: ["get", "list", "watch", "create", "delete", "update"]
+1
