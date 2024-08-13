@@ -7,7 +7,7 @@ image:
 
 service:
   type: NodePort
-  port: 8444
+  port: 8443
 
 ingress:
   enabled: true

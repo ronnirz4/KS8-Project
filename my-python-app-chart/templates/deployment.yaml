@@ -17,6 +17,6 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
-            - containerPort: 8444
+            - containerPort: 8443
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
