@@ -17,7 +17,7 @@ RUN mkdir /snyk && cd /snyk \
 RUN yum install -y python3 python3-pip \
  && pip3 install scikit-learn
 
-# Switch to the Jenkins agent image
+# Switch to the JenkinsAgent image
 FROM jenkins/agent
 COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
 COPY --from=installer /aws-cli-bin/ /usr/local/bin/
