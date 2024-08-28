@@ -1,5 +1,3 @@
-@Library('Shared-lib') _
-
 pipeline {
     agent {
         kubernetes {
