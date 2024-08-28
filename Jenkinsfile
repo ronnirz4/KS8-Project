@@ -2,21 +2,23 @@
 
 pipeline {
     agent {
-    kubernetes {
-      yaml '''
-        apiVersion: v1
-        kind: Pod
-        spec:
-          containers:
-          - name: jenkins-agent
-            image: jenkins-agent:latest
-            command:
-            - cat
-            tty: true
-        '''
-        defaultContainer:'jnlp'
+        kubernetes {
+            yaml '''
+            apiVersion: v1
+            kind: Pod
+            spec:
+              containers:
+              - name: jenkins-agent
+                image: jenkins-agent:latest
+                command:
+                - cat
+                tty: true
+            '''
+            defaultContainer: 'jnlp'
+        }
     }
-  }
+
+    stages {
         stage('Deploy with Helm') {
             steps {
                 script {
