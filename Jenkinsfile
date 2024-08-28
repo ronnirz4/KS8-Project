@@ -21,11 +21,8 @@ pipeline {
     }
 
     options {
-        // Keeps builds for the last 30 days.
         buildDiscarder(logRotator(daysToKeepStr: '30'))
-        // Prevents concurrent builds of the same pipeline.
         disableConcurrentBuilds()
-        // Adds timestamps to the log output.
         timestamps()
     }
 
@@ -62,7 +59,7 @@ pipeline {
                 script {
                     echo 'Starting Docker Build Stage...'
                     try {
-                        bat """
+                        sh """
                             docker-compose -f ${DOCKER_COMPOSE_FILE} build
                         """
                         echo 'Docker Build Stage Completed'
@@ -79,11 +76,11 @@ pipeline {
                     script {
                         echo 'Starting Login, Tag, and Push Images Stage...'
                         try {
-                            bat(script: 'git rev-parse --short HEAD > gitCommit.txt')
+                            sh 'git rev-parse --short HEAD > gitCommit.txt'
                             def GITCOMMIT = readFile('gitCommit.txt').trim()
                             def GIT_TAG = "${GITCOMMIT}"
                             def IMAGE_TAG = "v1.0.0-${BUILD_NUMBER}-${GIT_TAG}"
-                            bat """
+                            sh """
                                 cd polybot
                                 docker login -u ${USER} -p ${PASS} ${NEXUS_PROTOCOL}://${NEXUS_URL}/repository/${NEXUS_REPO}
                                 docker tag ${APP_IMAGE_NAME}:latest ${NEXUS_URL}/${APP_IMAGE_NAME}:${IMAGE_TAG}
@@ -106,7 +103,7 @@ pipeline {
                     echo 'Starting Security Vulnerability Scanning Stage...'
                     try {
                         withCredentials([string(credentialsId: 'SNYK_API_TOKEN', variable: 'SNYK_TOKEN')]) {
-                            bat """
+                            sh """
                                 snyk auth ${SNYK_TOKEN}
                                 snyk container test ${APP_IMAGE_NAME}:latest --severity-threshold=high || exit 0
                             """
@@ -124,7 +121,7 @@ pipeline {
                 script {
                     echo 'Starting Install Python Requirements Stage...'
                     try {
-                        bat """
+                        sh """
                             pip install --upgrade pip
                             pip install pytest unittest2 pylint flask telebot Pillow loguru matplotlib scikit-learn
                         """
@@ -143,9 +140,9 @@ pipeline {
                         script {
                             echo 'Starting Static Code Linting Stage...'
                             try {
-                                bat """
+                                sh """
                                     python -m pylint -f parseable --reports=no polybot/*.py > pylint.log
-                                    type pylint.log
+                                    cat pylint.log
                                 """
                                 echo 'Static Code Linting Stage Completed'
                             } catch (Exception e) {
@@ -160,7 +157,7 @@ pipeline {
                         script {
                             echo 'Starting Unittest Stage...'
                             try {
-                                bat 'python -m pytest --junitxml results.xml polybot/test'
+                                sh 'python -m pytest --junitxml results.xml polybot/test'
                                 echo 'Unittest Stage Completed'
                             } catch (Exception e) {
                                 echo "Error in Unittest Stage: ${e}"
@@ -175,15 +172,15 @@ pipeline {
             steps {
                 script {
                     // Ensure Helm is installed in the pod
-                    bat 'helm version'
+                    sh 'helm version'
 
                     // Set up Kubernetes context for the desired namespace
-                    bat 'kubectl config set-context --current --namespace=demo'
+                    sh 'kubectl config set-context --current --namespace=demoapp'
 
                     // Deploy the application using your Helm chart
-                    bat """
+                    sh """
                     helm upgrade --install deploy-demo-0.1.0 ./my-python-app-chart \
-                    --namespace demo \
+                    --namespace demoapp \
                     --set image.repository=${DOCKER_REPO} \
                     --set image.tag=${GIT_COMMIT} \
                     --set replicas=3
