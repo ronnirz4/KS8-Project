@@ -24,7 +24,7 @@ pipeline {
                     bat 'helm version'
 
                     // Set up Kubernetes context for the desired namespace
-                    bat 'kubectl config set-context --current --namespace=demo'
+                    bat 'kubectl config set-context --current --namespace=demoapp'
 
                     // Deploy the application using your Helm chart
                     bat """
