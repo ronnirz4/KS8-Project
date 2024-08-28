@@ -174,25 +174,22 @@ pipeline {
         stage('Deploy with Helm') {
             steps {
                 script {
-                    echo 'Starting Deployment to EC2 Stage...'
-                    try {
-                        sshagent(['ec2-ssh-credentials']) {
-                            bat """
-                                ssh -o StrictHostKeyChecking=no ec2-user@ec2-3-72-58-99.eu-central-1.compute.amazonaws.com '
-                                    docker pull ronn4/repo1:app
-                                    docker stop app || true
-                                    docker rm app || true
-                                    docker run -d --name mypolybot-app -p 80:80 ronn4/repo1-app:latest
-                                '
-                            """
-                        }
-                        echo 'Deployment to EC2 Stage Completed'
-                    } catch (Exception e) {
-                        echo "Error in Deployment to EC2 Stage: ${e}"
-                        throw e
-                    }
+                    // Ensure Helm is installed in the pod
+                    bat 'helm version'
+
+                    // Set up Kubernetes context for the desired namespace
+                    bat 'kubectl config set-context --current --namespace=demo'
+
+                    // Deploy the application using your Helm chart
+                    bat """
+                    helm upgrade --install deploy-demo-0.1.0 ./my-python-app-chart \
+                    --namespace demo \
+                    --set image.repository=${DOCKER_REPO} \
+                    --set image.tag=${GIT_COMMIT} \
+                    --set replicas=3
+                    """
                 }
             }
         }
     }
-  }
+}
