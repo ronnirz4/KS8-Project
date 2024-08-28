@@ -19,6 +19,14 @@ pipeline {
     }
 
     stages {
+        stage('Use Shared Library Code') {
+            steps {
+                echo 'Using Shared Library Code Stage...'
+                helloWorld('DevOps Student')
+                echo 'Completed Shared Library Code Stage'
+            }
+        }
+
         stage('Deploy with Helm') {
             steps {
                 script {
