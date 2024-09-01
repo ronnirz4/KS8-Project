@@ -13,7 +13,7 @@ pipeline {
                 command:
                 - cat
                 tty: true
-            """
+            '''
         }
     }
 
@@ -69,6 +69,7 @@ pipeline {
                     sh 'kubectl config set-context --current --namespace=demoapp'
 
                     // Deploy the application using your Helm chart
+                    def GITCOMMIT = readFile('gitCommit.txt').trim()
                     sh """
                     helm upgrade --install deploy-demo-0.1.0 ./my-python-app-chart \
                     --namespace demoapp \
