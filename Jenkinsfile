@@ -25,32 +25,30 @@ pipeline {
     }
 
     environment {
-        APP_IMAGE_NAME ='app-image'
+        APP_IMAGE_NAME = 'app-image'
         WEB_IMAGE_NAME = 'web-image'
         DOCKER_COMPOSE_FILE = 'compose.yaml'
         DOCKER_REPO = 'ronn4/repo1'
         DOCKERHUB_CREDENTIALS = 'dockerhub'
-
     }
-            
-        }
+
+    stages {
         stage('Login, Tag, and Push Images') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'NEXUS_CREDENTIALS_ID', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     script {
                         echo 'Starting Login, Tag, and Push Images Stage...'
                         try {
                             sh 'git rev-parse --short HEAD > gitCommit.txt'
                             def GITCOMMIT = readFile('gitCommit.txt').trim()
-                            def GIT_TAG = "${GITCOMMIT}"
-                            def IMAGE_TAG = "v1.0.0-${BUILD_NUMBER}-${GIT_TAG}"
+                            def IMAGE_TAG = "v1.0.0-${BUILD_NUMBER}-${GITCOMMIT}"
                             sh """
                                 cd polybot
-                                docker login -u ${USER} -p ${PASS} ${NEXUS_PROTOCOL}://${NEXUS_URL}/repository/${NEXUS_REPO}
-                                docker tag ${APP_IMAGE_NAME}:latest ${NEXUS_URL}/${APP_IMAGE_NAME}:${IMAGE_TAG}
-                                docker tag ${WEB_IMAGE_NAME}:latest ${NEXUS_URL}/${WEB_IMAGE_NAME}:${IMAGE_TAG}
-                                docker push ${NEXUS_URL}/${APP_IMAGE_NAME}:${IMAGE_TAG}
-                                docker push ${NEXUS_URL}/${WEB_IMAGE_NAME}:${IMAGE_TAG}
+                                docker login -u ${USER} -p ${PASS}
+                                docker tag ${APP_IMAGE_NAME}:latest ${DOCKER_REPO}/${APP_IMAGE_NAME}:${IMAGE_TAG}
+                                docker tag ${WEB_IMAGE_NAME}:latest ${DOCKER_REPO}/${WEB_IMAGE_NAME}:${IMAGE_TAG}
+                                docker push ${DOCKER_REPO}/${APP_IMAGE_NAME}:${IMAGE_TAG}
+                                docker push ${DOCKER_REPO}/${WEB_IMAGE_NAME}:${IMAGE_TAG}
                             """
                             echo 'Login, Tag, and Push Images Stage Completed'
                         } catch (Exception e) {
@@ -61,6 +59,7 @@ pipeline {
                 }
             }
         }
+
         stage('Deploy with Helm') {
             steps {
                 script {
@@ -75,7 +74,7 @@ pipeline {
                     helm upgrade --install deploy-demo-0.1.0 ./my-python-app-chart \
                     --namespace demoapp \
                     --set image.repository=${DOCKER_REPO} \
-                    --set image.tag=${GIT_COMMIT} \
+                    --set image.tag=${GITCOMMIT} \
                     --set replicas=3
                     """
                 }
