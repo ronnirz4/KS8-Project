@@ -1,14 +1,12 @@
 pipeline {
     agent {
         kubernetes {
-            label 'jenkins-agent'
-            defaultContainer 'jnlp'
             yaml '''
             apiVersion: v1
             kind: Pod
             spec:
               containers:
-              - name: jnlp
+              - name: jenkins-slave
                 image: ronn4/repo1:jenkins-agent
                 command:
                 - cat
