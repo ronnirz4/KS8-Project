@@ -10,11 +10,10 @@ pipeline {
               containers:
               - name: jnlp
                 image: ronn4/repo1:jenkins-agent
-                alwaysPullImage: true
-                imagePullSecrets:
-                - name: regcred
-                args: ['\${computer.jnlpmac}', '\${computer.name}']
-            '''
+                command:
+                - cat
+                tty: true
+            """
         }
     }
 
