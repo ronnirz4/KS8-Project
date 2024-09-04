@@ -37,8 +37,8 @@ pipeline {
                         echo 'Starting Login, Tag, and Push Images Stage...'
                         try {
                             sh 'git rev-parse --short HEAD > gitCommit.txt'
-                            def GITCOMMIT = readFile('gitCommit.txt').trim()
-                            def IMAGE_TAG = "v1.0.0-${BUILD_NUMBER}-${GITCOMMIT}"
+                            env.GITCOMMIT = readFile('gitCommit.txt').trim()
+                            env.IMAGE_TAG = "v1.0.0-${BUILD_NUMBER}-${GITCOMMIT}"
                             sh """
                                 cd polybot
                                 docker login -u ${USER} -p ${PASS}
@@ -67,12 +67,11 @@ pipeline {
                     sh 'kubectl config set-context --current --namespace=demoapp'
 
                     // Deploy the application using your Helm chart
-                    def GITCOMMIT = readFile('gitCommit.txt').trim()
                     sh """
                     helm upgrade --install deploy-demo-0.1.0 ./my-python-app-chart \
                     --namespace demoapp \
                     --set image.repository=${DOCKER_REPO} \
-                    --set image.tag=${GITCOMMIT} \
+                    --set image.tag=${IMAGE_TAG} \
                     --set replicas=3
                     """
                 }
