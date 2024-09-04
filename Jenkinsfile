@@ -22,8 +22,8 @@ pipeline {
     }
 
     environment {
-        APP_IMAGE_NAME = 'app-image'
-        WEB_IMAGE_NAME = 'web-image'
+        APP_IMAGE_NAME = 'app-image-latest'
+        WEB_IMAGE_NAME = 'web-image-latest'
         DOCKER_REPO = 'ronn4/repo1'
         DOCKERHUB_CREDENTIALS = 'dockerhub'
     }
@@ -35,12 +35,29 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     script {
                         echo 'Building Docker images...'
+                        sh 'docker --version'
                         sh """
                             cd polybot
-                            docker build -t ${DOCKER_REPO}/${APP_IMAGE_NAME}:latest .
-                            docker build -t ${DOCKER_REPO}/${WEB_IMAGE_NAME}:latest .
+                            docker build -t ${DOCKER_REPO}:${APP_IMAGE_NAME} .
+                            docker build -t ${DOCKER_REPO}:${WEB_IMAGE_NAME} .
                         """
                         echo 'Docker images built successfully'
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Images') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    script {
+                        echo 'Pushing Docker images to Docker Hub...'
+                        sh """
+                            echo ${PASS} | docker login -u ${USER} --password-stdin
+                            docker push ${DOCKER_REPO}:${APP_IMAGE_NAME}
+                            docker push ${DOCKER_REPO}:${WEB_IMAGE_NAME}
+                        """
+                        echo 'Docker images pushed successfully'
                     }
                 }
             }
@@ -50,13 +67,8 @@ pipeline {
             steps {
                 script {
                     echo 'Deploying with Helm...'
-                    // Ensure Helm is installed in the pod
                     sh 'helm version'
-
-                    // Set up Kubernetes context for the desired namespace
                     sh 'kubectl config set-context --current --namespace=demoapp'
-
-                    // Deploy the application using your Helm chart
                     sh """
                     helm upgrade --install deploy-demo-0.1.0 ./my-python-app-chart \
                     --namespace demoapp \
