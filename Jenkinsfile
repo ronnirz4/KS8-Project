@@ -24,35 +24,37 @@ pipeline {
     environment {
         APP_IMAGE_NAME = 'app-image'
         WEB_IMAGE_NAME = 'web-image'
-        DOCKER_COMPOSE_FILE = 'compose.yaml'
         DOCKER_REPO = 'ronn4/repo1'
         DOCKERHUB_CREDENTIALS = 'dockerhub'
     }
 
     stages {
-        stage('Login, Tag, and Push Images') {
+        stage('Build Docker Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     script {
-                        echo 'Starting Login, Tag, and Push Images Stage...'
-                        try {
-                            sh 'git rev-parse --short HEAD > gitCommit.txt'
-                            env.GITCOMMIT = readFile('gitCommit.txt').trim()
-                            env.IMAGE_TAG = "v1.0.0-${BUILD_NUMBER}-${GITCOMMIT}"
-                            sh """
-                                cd polybot
-                                docker login -u ${USER} -p ${PASS}
-                                docker tag ${APP_IMAGE_NAME}:latest ${DOCKER_REPO}/${APP_IMAGE_NAME}:${IMAGE_TAG}
-                                docker tag ${WEB_IMAGE_NAME}:latest ${DOCKER_REPO}/${WEB_IMAGE_NAME}:${IMAGE_TAG}
-                                docker push ${DOCKER_REPO}/${APP_IMAGE_NAME}:${IMAGE_TAG}
-                                docker push ${DOCKER_REPO}/${WEB_IMAGE_NAME}:${IMAGE_TAG}
-                            """
-                            echo 'Login, Tag, and Push Images Stage Completed'
-                        } catch (Exception e) {
-                            echo "Error in Login, Tag, and Push Images Stage: ${e}"
-                            throw e
-                        }
+                        echo 'Building Docker images...'
+                        sh """
+                            cd polybot
+                            docker build -t ${DOCKER_REPO}/${APP_IMAGE_NAME}:latest .
+                            docker build -t ${DOCKER_REPO}/${WEB_IMAGE_NAME}:latest .
+                        """
+                        echo 'Docker images built successfully'
                     }
+                }
+            }
+        }
+
+        stage('Test Docker Images') {
+            steps {
+                script {
+                    echo 'Testing Docker images...'
+                    sh """
+                        # Replace with actual test commands
+                        docker run --rm ${DOCKER_REPO}/${APP_IMAGE_NAME}:last python -m unittest discover
+                        docker run --rm ${DOCKER_REPO}/${WEB_IMAGE_NAME}:last # Add web app specific test command if needed
+                    """
+                    echo 'Docker images tested successfully'
                 }
             }
         }
@@ -60,6 +62,7 @@ pipeline {
         stage('Deploy with Helm') {
             steps {
                 script {
+                    echo 'Deploying with Helm...'
                     // Ensure Helm is installed in the pod
                     sh 'helm version'
 
@@ -71,11 +74,22 @@ pipeline {
                     helm upgrade --install deploy-demo-0.1.0 ./my-python-app-chart \
                     --namespace demoapp \
                     --set image.repository=${DOCKER_REPO} \
-                    --set image.tag=${IMAGE_TAG} \
+                    --set image.tag=latest \
                     --set replicas=3
                     """
+                    echo 'Deployment successful'
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            script {
+                sh 'docker rmi ${DOCKER_REPO}/${APP_IMAGE_NAME}:latest || true'
+                sh 'docker rmi ${DOCKER_REPO}/${WEB_IMAGE_NAME}:latest || true'
+            }
+            cleanWs()
         }
     }
 }
