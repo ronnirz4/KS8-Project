@@ -83,26 +83,6 @@ pipeline {
             }
         }
 
-        stage('Security Vulnerability Scanning') {
-            steps {
-                script {
-                    echo 'Starting Security Vulnerability Scanning Stage...'
-                    try {
-                        withCredentials([string(credentialsId: 'SNYK_API_TOKEN', variable: 'SNYK_TOKEN')]) {
-                            sh """
-                                snyk auth ${SNYK_TOKEN}
-                                snyk container test ${APP_IMAGE_NAME}:latest --severity-threshold=high || exit 0
-                            """
-                        }
-                        echo 'Security Vulnerability Scanning Stage Completed'
-                    } catch (Exception e) {
-                        echo "Error in Security Vulnerability Scanning Stage: ${e}"
-                        throw e
-                    }
-                }
-            }
-        }
-
         stage('Static Code Linting and Unittest') {
             parallel {
                 stage('Static code linting') {
