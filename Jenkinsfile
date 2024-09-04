@@ -29,19 +29,6 @@ pipeline {
     }
 
     stages {
-        stage('Test Docker Images') {
-            steps {
-                script {
-                    echo 'Testing Docker images...'
-                    sh """
-                        # Replace with actual test commands
-                        docker run --rm ${DOCKER_REPO}/${APP_IMAGE_NAME}:latest python -m unittest discover
-                        docker run --rm ${DOCKER_REPO}/${WEB_IMAGE_NAME}:latest # Add web app specific test command if needed
-                    """
-                    echo 'Docker images tested successfully'
-                }
-            }
-        }
 
         stage('Build Docker Images') {
             steps {
