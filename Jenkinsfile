@@ -50,7 +50,7 @@ pipeline {
 
         stage('Verify Files') {
             steps {
-                sh 'ls -R ./my-polybot-app-chart'
+                sh 'ls -R ./my-python-app-chart'
             }
         }
 
@@ -91,7 +91,7 @@ pipeline {
             steps {
                 container('jenkins-agent') {   // Ensure Kubernetes deployment runs in the jenkins-agent container with helm
                     withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
-                        sh 'helm upgrade --install my-polybot-app ./my-polybot-app-chart --namespace demoapp'
+                        sh 'helm upgrade --install my-python-app ./my-python-app-chart --namespace demoapp'
                     }
                 }
             }
