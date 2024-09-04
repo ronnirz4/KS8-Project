@@ -22,55 +22,61 @@ pipeline {
     }
 
     environment {
-         KUBECONFIG = "${env.WORKSPACE}/.kube/config"  // Add KUBECONFIG environment variable
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub')  // Add DockerHub credentials
+        APP_IMAGE_NAME = 'app-image'
+        WEB_IMAGE_NAME = 'web-image'
+        DOCKER_COMPOSE_FILE = 'compose.yaml'
+        DOCKER_REPO = 'ronn4/repo1'
+        DOCKERHUB_CREDENTIALS = 'dockerhub'
     }
 
-        stage('Build Docker Image') {
+    stages {
+        stage('Login, Tag, and Push Images') {
             steps {
-                container('jenkins-agent') {   // Ensure Docker commands run in the jenkins-agent container
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     script {
-                        echo "Checking Docker installation"
-                        sh 'docker --version || echo "Docker command failed"'
-
-                        echo "Building Docker Image"
-                        def commitHash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                        // Use the Dockerfile in the polybot/ folder to build the PolyBot image
-                        sh "docker build -t ronn4/mypolybot:${commitHash} -f polybot/Dockerfile ."
-                    }
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                container('jenkins-agent') {   // Ensure Docker push runs in the jenkins-agent container
-                    script {
-                        def commitHash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                        withCredentials([string(credentialsId: 'dockerhub', variable: 'DOCKER_HUB_CREDENTIALS')]) {
-                            sh "echo ${DOCKER_HUB_CREDENTIALS} | docker login -u ronn4 --password-stdin"
+                        echo 'Starting Login, Tag, and Push Images Stage...'
+                        try {
+                            sh 'git rev-parse --short HEAD > gitCommit.txt'
+                            def GITCOMMIT = readFile('gitCommit.txt').trim()
+                            def IMAGE_TAG = "v1.0.0-${BUILD_NUMBER}-${GITCOMMIT}"
+                            sh """
+                                cd polybot
+                                docker login -u ${USER} -p ${PASS}
+                                docker tag ${APP_IMAGE_NAME}:latest ${DOCKER_REPO}/${APP_IMAGE_NAME}:${IMAGE_TAG}
+                                docker tag ${WEB_IMAGE_NAME}:latest ${DOCKER_REPO}/${WEB_IMAGE_NAME}:${IMAGE_TAG}
+                                docker push ${DOCKER_REPO}/${APP_IMAGE_NAME}:${IMAGE_TAG}
+                                docker push ${DOCKER_REPO}/${WEB_IMAGE_NAME}:${IMAGE_TAG}
+                            """
+                            echo 'Login, Tag, and Push Images Stage Completed'
+                        } catch (Exception e) {
+                            echo "Error in Login, Tag, and Push Images Stage: ${e}"
+                            throw e
                         }
-                        sh "docker push ronn4/mypolybot:${commitHash}"
                     }
                 }
             }
         }
 
-
-        stage('Deploy to Kubernetes') {
+        stage('Deploy with Helm') {
             steps {
-                container('jenkins-agent') {   // Ensure Kubernetes deployment runs in the jenkins-agent container with helm
-                    withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
-                        sh 'helm upgrade --install my-polybot-app ./my-polybot-app-chart --namespace demoapp'
-                    }
+                script {
+                    // Ensure Helm is installed in the pod
+                    sh 'helm version'
+
+                    // Set up Kubernetes context for the desired namespace
+                    sh 'kubectl config set-context --current --namespace=demoapp'
+
+                    // Deploy the application using your Helm chart
+                    def GITCOMMIT = readFile('gitCommit.txt').trim()
+                    sh """
+                    helm upgrade --install deploy-demo-0.1.0 ./my-python-app-chart \
+                    --namespace demoapp \
+                    --set image.repository=${DOCKER_REPO} \
+                    --set image.tag=${GITCOMMIT} \
+                    --set replicas=3
+                    """
                 }
             }
-        }
-    }
-
-    post {
-        always {
-            cleanWs()
         }
     }
 }
