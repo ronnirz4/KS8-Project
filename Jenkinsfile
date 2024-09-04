@@ -29,6 +29,20 @@ pipeline {
     }
 
     stages {
+        stage('Test Docker Images') {
+            steps {
+                script {
+                    echo 'Testing Docker images...'
+                    sh """
+                        # Replace with actual test commands
+                        docker run --rm ${DOCKER_REPO}/${APP_IMAGE_NAME}:latest python -m unittest discover
+                        docker run --rm ${DOCKER_REPO}/${WEB_IMAGE_NAME}:latest # Add web app specific test command if needed
+                    """
+                    echo 'Docker images tested successfully'
+                }
+            }
+        }
+
         stage('Build Docker Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
@@ -41,20 +55,6 @@ pipeline {
                         """
                         echo 'Docker images built successfully'
                     }
-                }
-            }
-        }
-
-        stage('Test Docker Images') {
-            steps {
-                script {
-                    echo 'Testing Docker images...'
-                    sh """
-                        # Replace with actual test commands
-                        docker run --rm ${DOCKER_REPO}/${APP_IMAGE_NAME}:last python -m unittest discover
-                        docker run --rm ${DOCKER_REPO}/${WEB_IMAGE_NAME}:last # Add web app specific test command if needed
-                    """
-                    echo 'Docker images tested successfully'
                 }
             }
         }
