@@ -22,17 +22,43 @@ pipeline {
     }
 
     environment {
-        APP_IMAGE_NAME = 'app-image'
+        APP_IMAGE_NAME ='app-image'
         WEB_IMAGE_NAME = 'web-image'
         DOCKER_COMPOSE_FILE = 'compose.yaml'
         DOCKER_REPO = 'ronn4/repo1'
         DOCKERHUB_CREDENTIALS = 'dockerhub'
+        SNYK_API_TOKEN = 'SNYK_API_TOKEN'
     }
 
     stages {
+        stage('Checkout and Extract Git Commit Hash') {
+            steps {
+                echo 'Starting Checkout Stage...'
+                checkout scm
+                echo 'Completed Checkout Stage'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo 'Starting Docker Build Stage...'
+                    try {
+                        sh """
+                            docker-compose -f ${DOCKER_COMPOSE_FILE} build
+                        """
+                        echo 'Docker Build Stage Completed'
+                    } catch (Exception e) {
+                        echo "Error in Docker Build Stage: ${e}"
+                        throw e
+                    }
+                }
+            }
+        }
+
         stage('Login, Tag, and Push Images') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     script {
                         echo 'Starting Login, Tag, and Push Images Stage...'
                         try {
@@ -57,16 +83,68 @@ pipeline {
             }
         }
 
+        stage('Security Vulnerability Scanning') {
+            steps {
+                script {
+                    echo 'Starting Security Vulnerability Scanning Stage...'
+                    try {
+                        withCredentials([string(credentialsId: 'SNYK_API_TOKEN', variable: 'SNYK_TOKEN')]) {
+                            sh """
+                                snyk auth ${SNYK_TOKEN}
+                                snyk container test ${APP_IMAGE_NAME}:latest --severity-threshold=high || exit 0
+                            """
+                        }
+                        echo 'Security Vulnerability Scanning Stage Completed'
+                    } catch (Exception e) {
+                        echo "Error in Security Vulnerability Scanning Stage: ${e}"
+                        throw e
+                    }
+                }
+            }
+        }
+
+        stage('Static Code Linting and Unittest') {
+            parallel {
+                stage('Static code linting') {
+                    steps {
+                        script {
+                            echo 'Starting Static Code Linting Stage...'
+                            try {
+                                sh """
+                                    python -m pylint -f parseable --reports=no polybot/*.py > pylint.log
+                                    cat pylint.log
+                                """
+                                echo 'Static Code Linting Stage Completed'
+                            } catch (Exception e) {
+                                echo "Error in Static Code Linting Stage: ${e}"
+                                throw e
+                            }
+                        }
+                    }
+                }
+
+                stage('Unittest') {
+                    steps {
+                        script {
+                            echo 'Starting Unittest Stage...'
+                            try {
+                                sh 'python -m pytest --junitxml results.xml polybot/test'
+                                echo 'Unittest Stage Completed'
+                            } catch (Exception e) {
+                                echo "Error in Unittest Stage: ${e}"
+                                throw e
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Deploy with Helm') {
             steps {
                 script {
-                    // Ensure Helm is installed in the pod
                     sh 'helm version'
-
-                    // Set up Kubernetes context for the desired namespace
                     sh 'kubectl config set-context --current --namespace=demoapp'
-
-                    // Deploy the application using your Helm chart
                     def GITCOMMIT = readFile('gitCommit.txt').trim()
                     sh """
                     helm upgrade --install deploy-demo-0.1.0 ./my-python-app-chart \
