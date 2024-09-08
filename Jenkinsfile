@@ -80,7 +80,7 @@ pipeline {
                         def commitHash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                         withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                             // Using DockerHub credentials for login
-                            sh "docker login -u ${USER} -P ${PASS}"
+                            sh "docker login -u ${USER} -p ${PASS}"
                             sh "docker push ronn4/repo1:app-image-latest"
                         }
                     }
