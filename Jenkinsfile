@@ -8,7 +8,7 @@ pipeline {
               serviceAccountName: jenkins-admin
               containers:
               - name: jenkins-agent
-                image: ronn4/repo1:jenkins-agent
+                image: ronn4/repo1:jenkins-agent-new
                 securityContext:
                   privileged: true       # Enable privileged mode for Docker
                   runAsUser: 0           # Run as root user to access Docker socket
