@@ -16,7 +16,7 @@ pipeline {
                 - sh
                 - -c
                 - |
-                  git config --global --add safe.directory /home/jenkins/agent/workspace/kubernetes-project-pipeline
+                  git config --global --add safe.directory /home/jenkins/agent/workspace/K8S_Project
                   cat
                 tty: true
                 volumeMounts:
