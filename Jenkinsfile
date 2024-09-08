@@ -66,8 +66,7 @@ pipeline {
                             echo "Building Docker Image"
                             def commitHash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                             // Set the build context to the polybot/ folder
-                            sh "cd polybot"
-                            sh "docker build -t ronn4/repo1:app-image-latest ."
+                            sh "docker build -t ronn4/repo1:app-image-latest polybot/"
                         }
                     }
                 }
