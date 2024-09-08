@@ -66,7 +66,8 @@ pipeline {
                             echo "Building Docker Image"
                             def commitHash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                             // Set the build context to the polybot/ folder
-                            sh "docker build -t ronn4/repo1/app-image-latest:${commitHash} polybot/"
+                            sh "cd polybot"
+                            sh "docker build -t ronn4/repo1:app-image-latest"
                         }
                     }
                 }
@@ -80,8 +81,8 @@ pipeline {
                         def commitHash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                         withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                             // Using DockerHub credentials for login
-                            sh "echo ${PASS} | docker login -u ${USER} --password-stdin"
-                            sh "docker push ronn4/repo1/app-image-latest:${commitHash}"
+                            sh "docker login -u ${USER} -P ${PASS}"
+                            sh "docker push ronn4/repo1:app-image-latest"
                         }
                     }
                 }
