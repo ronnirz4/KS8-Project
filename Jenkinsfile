@@ -5,6 +5,7 @@ pipeline {
             apiVersion: v1
             kind: Pod
             spec:
+              serviceAccountName: jenkins-admin
               containers:
               - name: jenkins-agent
                 image: ronn4/repo1:jenkins-agent
