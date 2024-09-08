@@ -6,7 +6,7 @@ pipeline {
             kind: Pod
             spec:
               containers:
-              - name: jenkins-slave
+              - name: jenkins-agent
                 image: ronn4/repo1:jenkins-agent
                 securityContext:
                   privileged: true       # Enable privileged mode for Docker
