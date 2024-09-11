@@ -97,5 +97,26 @@ pipeline {
                 }
             }
         }
+
+        stage('Create/Update ArgoCD Application') {
+            steps {
+                container('jenkins-agent') {
+                    script {
+                        // Make sure 'application.yaml' is in the 'argocd-config' folder
+                        sh 'kubectl apply -f argocd-config/application.yaml -n argocd'
+                    }
+                }
+            }
+        }
+
+        stage('Sync ArgoCD Application') {
+            steps {
+                container('jenkins-agent') {
+                    script {
+                        sh 'kubectl -n argocd patch application my-polybot-app --type merge -p \'{"metadata": {"annotations": {"argocd.argoproj.io/sync-wave": "-1"}}}\''
+                    }
+                }
+            }
+        }
     }
 }
