@@ -113,7 +113,7 @@ pipeline {
             steps {
                 container('jenkins-agent') {
                     script {
-                        sh 'kubectl -n argocd patch application my-polybot-app --type merge -p \'{"metadata": {"annotations": {"argocd.argoproj.io/sync-wave": "-1"}}}\''
+                        sh 'kubectl -n argocd patch application my-python-app --type merge -p \'{"metadata": {"annotations": {"argocd.argoproj.io/sync-wave": "-1"}}}\''
                     }
                 }
             }
