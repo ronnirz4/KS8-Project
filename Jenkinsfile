@@ -37,7 +37,6 @@ pipeline {
 
     environment {
         APP_IMAGE_NAME = 'app-image-latest'
-        WEB_IMAGE_NAME = 'web-image-latest'
         DOCKER_REPO = 'ronn4/repo1'
         DOCKERHUB_CREDENTIALS = 'dockerhub'
     }
